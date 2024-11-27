@@ -104,16 +104,77 @@ public class SwiftFlutterLyraPlugin: NSObject, FlutterPlugin, LyraHostApi {
             DispatchQueue.main.asyncAfter(deadline: dispatchTime, execute: cancelProcessWork!)
         }
         
+        var lyraResponseData: String?
+        
         do {
             try Lyra.process(
                 viewController!,
                 request.formToken,
                 onSuccess: { ( _ lyraResponse: LyraResponse) -> Void in
                     cancelProcessWork?.cancel()
-                    completion(
-                        lyraResponse.getResponseDataString(),
-                        nil
-                    )
+                        lyraResponseData = lyraResponse.getResponseDataString()
+                        print("Lyra Response on Success: \(lyraResponse.getResponseDataString())")
+                    
+                    let responseData = lyraResponse.getResponseData()
+                        
+                        // Obtener los datos de la respuesta
+                    if let data = responseData as? Data {
+                           do {
+                               // Intentar decodificar los datos en un objeto JSON
+                               let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+                               
+                              
+                               if let json = jsonObject as? [String: Any] {
+                                   
+                                   let jsonData = try JSONSerialization.data(withJSONObject: json, options: [])
+                                   
+                                  
+                                   if let jsonString = String(data: jsonData, encoding: .utf8) {
+                                       print("Lyra Response data: \(jsonString)")
+                                       completion(jsonString, nil)
+                                   } else {
+                                       completion(nil,  FlutterError(
+                                        code: "lyra_process_error_code",
+                                        message: "An unknown error occured",
+                                        details: nil
+                                    ))
+                                   }
+                               } else if let jsonArray = jsonObject as? [Any] {
+                                  
+                                   let jsonData = try JSONSerialization.data(withJSONObject: jsonArray, options: [])
+                                   
+                                   if let jsonString = String(data: jsonData, encoding: .utf8) {
+                                       completion(jsonString, nil)
+                                   } else {
+                                       completion(nil,  FlutterError(
+                                        code: "lyra_process_error_code",
+                                        message: "An unknown error occured",
+                                        details: nil
+                                    ))
+                                   }
+                               } else {
+                                   completion(nil,  FlutterError(
+                                    code: "lyra_process_error_code",
+                                    message: "An unknown error occured",
+                                    details: nil
+                                ))
+                               }
+                           } catch {
+                               // Manejar errores de decodificación
+                               completion(nil,  FlutterError(
+                                code: "lyra_process_error_code",
+                                message: "An unknown error occured",
+                                details: nil
+                            ))
+                           }
+                       } else {
+                           // Si getResponseData no devuelve un Data
+                           completion(nil,  FlutterError(
+                            code: "lyra_process_error_code",
+                            message: "An unknown error occured",
+                            details: nil
+                        ))
+                       }
                 },
                 onError: { (_ error: LyraError, _ lyraResponse: LyraResponse?) -> Void in
                     cancelProcessWork?.cancel()
