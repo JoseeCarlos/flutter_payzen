@@ -1,7 +1,8 @@
 name: flutter_lyra_platform_interface
 description: A common platform interface for the flutter_lyra plugin.
-version: 0.4.0
-publish_to: none
+version: 0.7.1
+homepage: https://github.com/bamlab/Flutter-Lyra
+repository: https://github.com/bamlab/Flutter-Lyra
 
 environment:
   sdk: ">=2.19.0 <3.0.0"
